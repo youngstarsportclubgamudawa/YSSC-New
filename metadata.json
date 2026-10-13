@@ -1,0 +1,6 @@
+{
+  "name": "Young Star Sports Club - Gamudawa",
+  "description": "Official community sports club management portal for Young Star Sports Club (YSSC) Gamudawa — events, member directory, financial ledger, documents, and bilingual Sinhala/English support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
