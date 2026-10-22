@@ -156,9 +156,20 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+function safeJsonParse<T>(jsonStr: string | null, fallback: T): T {
+  if (!jsonStr) return fallback;
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return parsed !== null && parsed !== undefined ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem('youngstar_lang') as Language) || 'en';
+    const saved = localStorage.getItem('youngstar_lang');
+    return saved === 'si' ? 'si' : 'en';
   });
 
   const setLanguage = (lang: Language) => {
@@ -167,7 +178,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.documentElement.lang = lang;
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   const [role, setRole] = useState<Role>('organiser');
   const [currentUser, setCurrentUser] = useState({
@@ -186,18 +197,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const unsub = initAuth(
-      (user) => {
-        setGoogleUser(user);
-        if (user?.email) {
-          const emailLower = user.email.toLowerCase();
-          if (emailLower === 'youngstarsportclubgamudawa@gmail.com' || emailLower.includes('youngstar')) {
-            setIsOnlyMeAuthorized(true);
-            localStorage.setItem('youngstar_only_me_auth', 'true');
-            setOnlyMeEmailState(user.email);
-            setRole('organiser');
-          }
-        }
-      },
+      (user) => setGoogleUser(user),
       () => setGoogleUser(null)
     );
     return () => unsub?.();
@@ -208,40 +208,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [parsedSheet, setParsedSheet] = useState<ParsedSheetData | null>(() => {
-    const saved = localStorage.getItem('youngstar_parsed_sheet');
-    return saved ? JSON.parse(saved) : null;
+    return safeJsonParse<ParsedSheetData | null>(localStorage.getItem('youngstar_parsed_sheet'), null);
   });
 
   const [memberRecords, setMemberRecords] = useState<MemberRecord[]>(() => {
-    const saved = localStorage.getItem('youngstar_member_records');
-    return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
+    return safeJsonParse<MemberRecord[]>(localStorage.getItem('youngstar_member_records'), INITIAL_MEMBERS);
   });
 
   const [financeSummary, setFinanceSummary] = useState<FinanceSummary>(() => {
-    const saved = localStorage.getItem('youngstar_finance_summary');
-    return saved ? JSON.parse(saved) : INITIAL_SUMMARY;
+    return safeJsonParse<FinanceSummary>(localStorage.getItem('youngstar_finance_summary'), INITIAL_SUMMARY);
   });
 
   const [expenses, setExpenses] = useState<ExpenseRecord[]>(() => {
-    const saved = localStorage.getItem('youngstar_expenses');
-    return saved ? JSON.parse(saved) : [];
+    return safeJsonParse<ExpenseRecord[]>(localStorage.getItem('youngstar_expenses'), []);
   });
 
   const [managementLeaders, setManagementLeaders] = useState<ManagementLeader[]>(() => {
-    const saved = localStorage.getItem('youngstar_leaders');
-    return saved ? JSON.parse(saved) : INITIAL_MANAGEMENT_LEADERS;
+    return safeJsonParse<ManagementLeader[]>(localStorage.getItem('youngstar_leaders'), INITIAL_MANAGEMENT_LEADERS);
   });
 
   const [events, setEvents] = useState<ClubEvent[]>(() => {
-    const saved = localStorage.getItem('youngstar_events');
-    return saved ? JSON.parse(saved) : INITIAL_EVENTS;
+    return safeJsonParse<ClubEvent[]>(localStorage.getItem('youngstar_events'), INITIAL_EVENTS);
   });
 
   const [weeklyDrills] = useState<WeeklyDrill[]>(INITIAL_WEEKLY_DRILLS);
 
   const [documents, setDocuments] = useState<ClubDoc[]>(() => {
-    const saved = localStorage.getItem('youngstar_documents');
-    return saved ? JSON.parse(saved) : INITIAL_DOCS;
+    return safeJsonParse<ClubDoc[]>(localStorage.getItem('youngstar_documents'), INITIAL_DOCS);
   });
 
   // Google Drive URL for saving anything
@@ -255,34 +248,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [cricketEntries, setCricketEntries] = useState<DailyCricketEntry[]>(() => {
-    const saved = localStorage.getItem('youngstar_cricket_entries');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= INITIAL_CRICKET_ENTRIES.length) {
-          return parsed;
-        }
-      } catch (e) {}
+    const parsed = safeJsonParse<DailyCricketEntry[] | null>(localStorage.getItem('youngstar_cricket_entries'), null);
+    if (Array.isArray(parsed) && parsed.length >= INITIAL_CRICKET_ENTRIES.length) {
+      return parsed;
     }
     return INITIAL_CRICKET_ENTRIES;
   });
 
   // Cricket Match Organizing & WhatsApp-style Poll
   const [matchOrganizing, setMatchOrganizingState] = useState<CricketMatchOrganizing>(() => {
-    const saved = localStorage.getItem('youngstar_match_organizing');
-    return saved ? JSON.parse(saved) : INITIAL_MATCH_ORGANIZING;
+    return safeJsonParse<CricketMatchOrganizing>(localStorage.getItem('youngstar_match_organizing'), INITIAL_MATCH_ORGANIZING);
   });
 
   // Club Official Announcements
   const [announcements, setAnnouncements] = useState<ClubAnnouncement[]>(() => {
-    const saved = localStorage.getItem('youngstar_announcements');
-    return saved ? JSON.parse(saved) : INITIAL_ANNOUNCEMENTS;
+    return safeJsonParse<ClubAnnouncement[]>(localStorage.getItem('youngstar_announcements'), INITIAL_ANNOUNCEMENTS);
   });
 
   // Official Club Profile (Editable in real-time via Master Living Document)
   const [clubProfile, setClubProfile] = useState<ClubProfile>(() => {
-    const saved = localStorage.getItem('youngstar_club_profile');
-    return saved ? JSON.parse(saved) : INITIAL_CLUB_PROFILE;
+    return safeJsonParse<ClubProfile>(localStorage.getItem('youngstar_club_profile'), INITIAL_CLUB_PROFILE);
   });
 
   // Google Drive "Only Me" Security & Synchronization

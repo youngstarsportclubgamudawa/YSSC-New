@@ -135,11 +135,91 @@ const PortalShell: React.FC = () => {
   );
 };
 
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Portal ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  handleReset = () => {
+    try {
+      localStorage.removeItem('youngstar_member_records');
+      localStorage.removeItem('youngstar_cricket_entries');
+      localStorage.removeItem('youngstar_match_organizing');
+      localStorage.removeItem('youngstar_finance_summary');
+      localStorage.removeItem('youngstar_club_profile');
+      localStorage.removeItem('youngstar_leaders');
+      localStorage.removeItem('youngstar_expenses');
+      localStorage.removeItem('youngstar_documents');
+      localStorage.removeItem('youngstar_announcements');
+    } catch {}
+    window.location.reload();
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#f4f0e7] flex items-center justify-center p-4 font-sans text-slate-800">
+          <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-xl border border-slate-200 text-center space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-amber-800 text-2xl font-bold">
+              🏏
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900">
+              Young Star Sports Club Portal
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600">
+              The application encountered a display glitch. You can reload the portal or reset the cached state to continue.
+            </p>
+            {this.state.error && (
+              <pre className="text-[11px] bg-slate-100 p-3 rounded-xl text-slate-600 overflow-x-auto text-left font-mono">
+                {this.state.error.message || String(this.state.error)}
+              </pre>
+            )}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs shadow-md cursor-pointer transition-colors"
+              >
+                Reload Portal
+              </button>
+              <button
+                onClick={this.handleReset}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
+              >
+                Reset Stored Data & Reload
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function App() {
   return (
-    <AppProvider>
-      <PortalShell />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <PortalShell />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 
